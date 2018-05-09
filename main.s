@@ -1,4 +1,5 @@
 .org 0x0000
+.bank 0
 
 .incasm "defs.s"
 
@@ -16,8 +17,12 @@ main:
 	; fallthrough to welcome_start
 	.incasm "welcome.s"
 
+.incasm "tetris.s"
+
 .incasm "i8251.s"
 .incasm "i8255.s"
 .incasm "st7565p.s"
 
+.bank 3
+.org 0x0000
 .incasm "font_rotated.s"
