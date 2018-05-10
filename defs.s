@@ -56,9 +56,9 @@
 ; Tetris
 ;
 .def tetris_block_width_px 8
-.def tetris_block_height_px 8 
+.def tetris_block_height_px 8
 .def tetris_board_width_blocks 8
-.def tetris_board_height_blocks 15
+.def tetris_board_height_blocks 14
 .def tetris_board_width_px (tetris_board_width_blocks*tetris_board_width_blocks)
 .def tetris_board_height_px (tetris_board_height_blocks*tetris_board_height_blocks)
 
@@ -74,5 +74,16 @@
 .def last_buttons (ram_start+0)
 .def current_menu_item (ram_start+1)
 
-.def tetris_board (ram_start+16) ; size: 12 bytes
-.def tetris_board_last_row (ram_start+16+(12-1))
+.def tetris_dropping_something (ram_start+4)
+.def tetris_drop_counter (ram_start+5) ; size: 2 bytes
+.def tetris_fall_index (ram_start+7)
+
+.def tetris_fall_zone_start_buffer (ram_start+8) ; size: 15 bytes
+.def tetris_fall_zone (ram_start+23) ; size: 4 bytes
+.def tetris_fall_zone_last_row (tetris_fall_zone+(4-1))
+.def tetris_fall_zone_end_buffer (ram_start+27) ; size: 15 bytes
+.def tetris_fall_zone_end_buffer_last_row (tetris_fall_zone_end_buffer+(15-1))
+
+.def tetris_board (ram_start+42) ; size: 14 bytes
+.def tetris_board_last_row (tetris_board+(14-1))
+.def tetris_board_buffer_row (tetris_board_last_row+1)

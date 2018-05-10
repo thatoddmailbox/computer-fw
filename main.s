@@ -6,9 +6,13 @@
 main:
 	ld sp, 0xFFFF
 
-	ld hl, last_buttons
 	xor a
+	ld hl, ram_start
+	ld bc, (tetris_board_last_row-ram_start)
+main_clear_ram_loop:
 	ld [hl], a
+	dec bc
+	jp nz, main_clear_ram_loop
 
 	call i8251_init
 	call i8255_init
@@ -17,6 +21,7 @@ main:
 	; fallthrough to welcome_start
 	.incasm "welcome.s"
 
+.incasm "util.s"
 .incasm "tetris.s"
 
 .incasm "i8251.s"
