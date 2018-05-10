@@ -9,8 +9,37 @@ tetris_start:
 	call tetris_choose_and_load_piece
 
 tetris_game_loop:
+	; bump the random counter
+	ld hl, random_counter
+	inc [hl]
+
 	; draw the board
 	call tetris_draw_board
+
+	; check for input
+	ld a, [last_buttons]
+	ld b, a
+	ld a, [i8255_port_a]
+
+	bit i8255_button_bit_up, a
+	jp z, tetris_game_loop_skip_up
+	bit i8255_button_bit_up, b
+	jp nz, tetris_game_loop_skip_up
+	; up button (move piece right)
+	ld c, 0
+	call tetris_side
+tetris_game_loop_skip_up:
+
+	bit i8255_button_bit_down, a
+	jp z, tetris_game_loop_skip_down
+	bit i8255_button_bit_down, b
+	jp nz, tetris_game_loop_skip_down
+	; down button (move piece left)
+	ld c, 255
+	call tetris_side
+tetris_game_loop_skip_down:
+
+	ld [last_buttons], a
 
 	; check the drop counter
 	ld hl, [tetris_drop_counter]
@@ -46,13 +75,82 @@ tetris_game_loop_dropping:
 tetris_game_loop_no_drop:
 	jp tetris_game_loop
 
+; tetris_side: Handles side-to-side movement of the falling piece .
+; Parameters: C = 0 if moving right, 255 if moving left
+; Trashes: D, E, H, L
+; Returns: none
+tetris_side:
+	push af
+	push bc
+
+	; if we're not dropping something, return immediately
+	ld a, [tetris_dropping_something]
+	or a
+	jp z, tetris_side_return
+
+	; check what direction we're moving it, and set D to the test mask
+	xor a
+	or c
+	jp z, tetris_side_right
+	ld d, 0b10000000
+	jp tetris_side_testmask_set
+tetris_side_right:
+	ld d, 0b00000001
+tetris_side_testmask_set:
+
+	ld hl, tetris_fall_zone
+	ld e, 3
+tetris_side_test_row_loop:
+	ld a, [hl]
+	and d
+	jp nz, tetris_side_return ; if it's nz, then there is something on the extreme side and we can't move anything, so just return
+	inc hl
+	dec e
+	jp nz, tetris_side_test_row_loop
+
+	xor a
+	or c
+	jp nz, tetris_side_shift_left
+tetris_side_shift_right:
+	ld hl, tetris_fall_zone
+	ld e, 3
+tetris_side_shift_right_loop:
+	srl [hl]
+	inc hl
+	dec e
+	jp nz, tetris_side_shift_right_loop
+	jp tetris_side_return
+
+tetris_side_shift_left:
+	ld hl, tetris_fall_zone
+	ld e, 3
+tetris_side_shift_left_loop:
+	sla [hl]
+	inc hl
+	dec e
+	jp nz, tetris_side_shift_left_loop
+
+tetris_side_return:
+	pop bc
+	pop af
+	ret
+
 ; tetris_choose_and_load_piece: Selects a piece randomly and loads into the fall zone.
 ; Parameters: none
 ; Trashes: A, B, C, D, E, H, L
 ; Returns: none
 tetris_choose_and_load_piece:
-	; TODO: randomness
-	ld a, 3
+	; THIS IS A BAD WAY TO DO RANDOMNESS
+	; THE DISTRIBUTION IS IN NO WAY UNIFORM
+	; HOWEVER IT'S FAST, SMALL, AND WORKS SO TOO BAD
+	ld a, [random_counter]
+	add a, 83
+	ld [random_counter], a
+	and (32-1)
+	cp 32
+	jp nc, tetris_choose_and_load_piece_no_divide
+	srl a
+tetris_choose_and_load_piece_no_divide:
 
 	; multiply A by 4 and use that to get the address of the piece from the pieces table
 	sla a

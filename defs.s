@@ -73,6 +73,7 @@
 ;
 .def last_buttons (ram_start+0)
 .def current_menu_item (ram_start+1)
+.def random_counter (ram_start+2)
 
 .def tetris_dropping_something (ram_start+4)
 .def tetris_drop_counter (ram_start+5) ; size: 2 bytes

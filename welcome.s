@@ -21,6 +21,9 @@ welcome_start:
 	call st7565p_write_str
 
 welcome_loop:
+	ld hl, random_counter
+	inc [hl]
+
 	ld a, [last_buttons]
 	ld b, a
 	ld a, [i8255_port_a]
