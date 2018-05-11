@@ -2,8 +2,13 @@ tetris_start:
 	ld a, 0xFF
 	ld [tetris_board_buffer_row], a
 
+	xor a
 	ld hl, tetris_board
-	ld a, 0b11001111
+	ld b, tetris_board_height_blocks
+tetris_clear_board_row:
+	ld [hl], a
+	dec b
+	jp nz, tetris_clear_board_row
 
 	; fall through
 	call tetris_choose_and_load_piece
@@ -75,7 +80,7 @@ tetris_game_loop_dropping:
 tetris_game_loop_no_drop:
 	jp tetris_game_loop
 
-; tetris_side: Handles side-to-side movement of the falling piece .
+; tetris_side: Handles side-to-side movement of the falling piece.
 ; Parameters: C = 0 if moving right, 255 if moving left
 ; Trashes: D, E, H, L
 ; Returns: none
@@ -98,8 +103,9 @@ tetris_side_right:
 	ld d, 0b00000001
 tetris_side_testmask_set:
 
+	; test if we're near the edge
 	ld hl, tetris_fall_zone
-	ld e, 3
+	ld e, 4
 tetris_side_test_row_loop:
 	ld a, [hl]
 	and d
@@ -108,32 +114,69 @@ tetris_side_test_row_loop:
 	dec e
 	jp nz, tetris_side_test_row_loop
 
+	ld d, 0 ; d being zero signals that it's a normal shift (as opposed to an undo)
+
+	; actually do the shift
+tetris_side_do_shift:
 	xor a
 	or c
 	jp nz, tetris_side_shift_left
 tetris_side_shift_right:
 	ld hl, tetris_fall_zone
-	ld e, 3
+	ld e, 4
 tetris_side_shift_right_loop:
 	srl [hl]
 	inc hl
 	dec e
 	jp nz, tetris_side_shift_right_loop
-	jp tetris_side_return
+	jp tetris_side_shift_complete
 
 tetris_side_shift_left:
 	ld hl, tetris_fall_zone
-	ld e, 3
+	ld e, 4
 tetris_side_shift_left_loop:
 	sla [hl]
 	inc hl
 	dec e
 	jp nz, tetris_side_shift_left_loop
 
+tetris_side_shift_complete:
+	; are we doing this to undo something? if so, d is 255 and just return
+	xor a
+	or d
+	jp nz, tetris_side_return
+
+	;ld b, b
+
+	; test if doing that shift caused us to overlap with existing blocks
+	ld a, [tetris_fall_index]
+	ld d, 0
+	ld e, a
+	ld hl, tetris_fall_zone
+	sbc hl, de
+	ld b, tetris_board_height_blocks
+	ld de, tetris_board
+tetris_side_overlap_test:
+	; take the board value and AND it with the fall zone row
+	ld a, [de]
+	and [hl]
+	jp nz, tetris_side_undo_needed
+	inc hl
+	inc de
+	dec b
+	jp nz, tetris_side_overlap_test
+
 tetris_side_return:
 	pop bc
 	pop af
 	ret
+tetris_side_undo_needed:
+	; flip c and re-run the shift
+	ld a, c
+	cpl
+	ld c, a
+	ld d, 255 ; d being 0xFF signals that it's an undo shift
+	jp tetris_side_do_shift
 
 ; tetris_choose_and_load_piece: Selects a piece randomly and loads into the fall zone.
 ; Parameters: none
