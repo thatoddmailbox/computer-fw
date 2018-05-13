@@ -72,19 +72,22 @@
 ; variables
 ;
 .def last_buttons (ram_start+0)
-.def current_menu_item (ram_start+1)
-.def random_counter (ram_start+2)
+.def current_menu_item (last_buttons+1)
+.def random_counter (current_menu_item+1)
 
-.def tetris_dropping_something (ram_start+4)
-.def tetris_drop_counter (ram_start+5) ; size: 2 bytes
-.def tetris_fall_index (ram_start+7)
+.def tetris_lines (random_counter+1)
+.def tetris_lines_old (tetris_lines+1)
+.def tetris_need_collision_check (tetris_lines_old+1)
+.def tetris_dropping_something (tetris_need_collision_check+1)
+.def tetris_drop_counter (tetris_dropping_something+1) ; size: 2 bytes
+.def tetris_fall_index (tetris_drop_counter+2)
 
-.def tetris_fall_zone_start_buffer (ram_start+8) ; size: 15 bytes
-.def tetris_fall_zone (ram_start+23) ; size: 4 bytes
+.def tetris_fall_zone_start_buffer (tetris_fall_index+1) ; size: 15 bytes
+.def tetris_fall_zone (tetris_fall_zone_start_buffer+15) ; size: 4 bytes
 .def tetris_fall_zone_last_row (tetris_fall_zone+(4-1))
-.def tetris_fall_zone_end_buffer (ram_start+27) ; size: 15 bytes
+.def tetris_fall_zone_end_buffer (tetris_fall_zone+4) ; size: 15 bytes
 .def tetris_fall_zone_end_buffer_last_row (tetris_fall_zone_end_buffer+(15-1))
 
-.def tetris_board (ram_start+42) ; size: 14 bytes
+.def tetris_board (tetris_fall_zone_end_buffer+15) ; size: 14 bytes
 .def tetris_board_last_row (tetris_board+(14-1))
 .def tetris_board_buffer_row (tetris_board_last_row+1)

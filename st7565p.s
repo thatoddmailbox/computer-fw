@@ -76,6 +76,55 @@ st7565p_write_char_loop:
 
 	ret
 
+; st7565p_write_turned_char: Writes the given character to the current cursor position of the ST7565P.
+; Parameters: A = character to write
+; Trashes: B, C, H, L
+; Returns: none
+st7565p_write_turned_char:
+	; set hl to character
+	ld h, 0
+	ld l, a
+
+	; shift left 3
+	add hl, hl
+	add hl, hl
+	add hl, hl
+
+	ld bc, font
+	add hl, bc ; HL is now pointing at the character data to output
+
+	ld a, 0b10000000
+st7565p_write_turned_char_loop:
+	ld bc, 0x0008
+st7565p_write_turned_char_row_loop:
+	push af
+	and [hl] ; mask off the bit we're looking at now
+	scf ; set the carry flag
+	jp nz, st7565p_write_turned_char_bit_not_off
+st7565p_write_turned_char_bit_off:
+	ccf ; the bit is off, so complement carry flag (in this case always clear)
+st7565p_write_turned_char_bit_not_off:
+	rr b ; rotate the new bit in
+	pop af
+	inc hl
+	dec c
+	jp nz, st7565p_write_turned_char_row_loop
+
+	; output the byte
+	push af
+	ld a, b
+	ld [st7565p_data], a
+	pop af
+
+	; subtract 8 from hl
+	ld bc, 0x0008
+	sbc hl, bc
+
+	srl a
+	jp nc, st7565p_write_turned_char_row_loop ; can jump directly to the row loop b/c we already set bc correctly
+
+	ret
+
 ; st7565p_write_str: Writes the given string to the given position.
 ; Parameters: HL = address of string to write, B = x coordinate, C = page to write on
 ; Trashes: A, B, C

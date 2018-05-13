@@ -1,8 +1,10 @@
 tetris_start:
 	ld a, 0xFF
 	ld [tetris_board_buffer_row], a
+	ld [tetris_lines_old], a
 
 	xor a
+	ld [tetris_lines], a
 	ld hl, tetris_board
 	ld b, tetris_board_height_blocks
 tetris_clear_board_row:
@@ -282,15 +284,72 @@ tetris_draw_board_block_done:
 	cp ((tetris_board_last_row+1)&0xFF)
 	jp nz, tetris_draw_board_row_loop
 
+	; load the current score and compare to the last drawn
+	ld hl, tetris_lines
+	ld a, [hl]
+	inc hl
+	cp [hl]
+	jp z, tetris_draw_board_do_not_redraw_score
+
 	; draw the border between the playfield and score
 	ld a, 0xFF
 	ld [de], a
 	ld [de], a
+	xor a
+	ld [de], a
+	ld [de], a
+	ld [de], a
 
+	; compare the current column
+	ld a, c
+	cp 2
+	jp nc, tetris_draw_board_do_not_redraw_score ; column > 2 -> don't draw score
+
+	push bc
+	push hl
+
+	; a contains the current column
+	; 0 -> 00001111
+	; 1 -> 11110000
+	or a
+	ld a, [tetris_lines]
+	jp nz, tetris_draw_board_column_not_zero
+	ld c, 0b00001111
+	and c
+	jp tetris_draw_board_column_found
+tetris_draw_board_column_not_zero:
+	ld c, 0b11110000
+	and c
+	srl a
+	srl a
+	srl a
+	srl a
+tetris_draw_board_column_found:
+
+	ld b, '0'
+	add a, b
+	call st7565p_write_turned_char
+
+	pop hl
+	pop bc
+
+	; finish screen
+	xor a
+	ld [de], a
+	ld [de], a
+	ld [de], a
+
+tetris_draw_board_do_not_redraw_score:
 	; loop until the 1 on the bitmask has been rotated out
 	inc c
 	sla b
 	jp nc, tetris_draw_board_column_loop
+
+	; copy the drawn tetris score to the old one
+	ld hl, tetris_lines
+	ld a, [hl]
+	inc hl
+	ld [hl], a
 
 	ret
 
@@ -358,10 +417,47 @@ tetris_check_fall_collision_found_block_reset:
 	inc hl
 	dec b
 	jp nz, tetris_check_fall_collision_found_block_reset
+
+	; check for completed lines
+tetris_check_fall_collision_complete_check_start:
+	ld hl, tetris_board
+	ld b, tetris_board_height_blocks
+tetris_check_fall_collision_complete_check_row_loop:
+	ld a, [hl]
+	cp 0xFF
+	jp z, tetris_check_fall_collision_complete_check_done
+	inc hl
+	dec b
+	jp nz, tetris_check_fall_collision_complete_check_row_loop
+
 	; clear the dropping something flag and fall index
+	xor a
 	ld [tetris_dropping_something], a
 	ld [tetris_fall_index], a
+
 	ret
+tetris_check_fall_collision_complete_check_done:
+	; copy the above row down one
+	dec hl
+	ld a, [hl]
+	inc hl
+	ld [hl], a
+
+	dec hl
+
+	inc b
+	ld a, b
+	cp tetris_board_height_blocks
+	jp nz, tetris_check_fall_collision_complete_check_done
+
+	; add a line
+	ld a, [tetris_lines]
+	inc a
+	daa
+	ld [tetris_lines], a
+
+	; restart the check from the beginning now
+	jp tetris_check_fall_collision_complete_check_start
 
 tetris_block:
 	db 0b11111111
