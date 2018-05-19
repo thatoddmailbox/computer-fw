@@ -7,10 +7,118 @@
 
 ; st7565p_init: Initializes the ST7565P.
 ; Parameters: none
-; Trashes: A
+; Trashes: A, B
 ; Returns: none
 st7565p_init:
+	; reset
 	ld a, st7565p_command_reset
+	ld [st7565p_command], a
+
+	call st7565p_wait
+
+	; set bias 7
+	ld a, 0xAE
+	ld [st7565p_command], a
+
+	; set adc normal
+	ld a, 0xA0
+	ld [st7565p_command], a
+
+	; set com normal
+	ld a, 0xC0
+	ld [st7565p_command], a
+
+	; set display start line
+	ld a, 0x40
+	ld [st7565p_command], a
+
+	; enable voltage converter
+	ld a, (0x28 | 0x4)
+	ld [st7565p_command], a
+
+	call st7565p_wait
+
+	; enable voltage regulator
+	ld a, (0x28 | 0x6)
+	ld [st7565p_command], a
+
+	call st7565p_wait
+
+	; enable voltage follower
+	ld a, (0x28 | 0x7)
+	ld [st7565p_command], a
+
+	call st7565p_wait
+
+	; set lcd operating voltage
+	ld a, (0x20 | 0x6)
+	ld [st7565p_command], a
+
+	; display on
+	ld a, 0xAF
+	ld [st7565p_command], a
+
+	; display normal
+	ld a, 0b10100100
+	ld [st7565p_command], a
+
+	; set constrast
+	ld b, 0x05
+	call st7565p_set_contrast
+
+	call st7565p_wait
+
+	; clear ram
+	call st7565p_clear
+
+	ret
+
+st7565p_wait:
+	ld b, 0
+st7565p_wait_loop_outer:
+	ld a, 0
+st7565p_wait_loop:
+	nop
+	nop
+	nop
+	nop
+	dec a
+	jp nz, st7565p_wait_loop
+	dec b
+	jp nz, st7565p_wait_loop_outer
+	ret
+
+; st7565p_clear: Clears the RAM of the ST7565P.
+; Parameters: none
+; Trashes: A
+; Returns: none
+st7565p_clear:
+	ld b, 7
+st7565p_clear_page:
+	push bc
+	ld b, 0
+	call st7565p_set_column_address
+	pop bc
+	call st7565p_set_page_address
+	ld c, 128
+	xor a
+st7565p_clear_page_loop:
+	ld [st7565p_data], a
+	dec c
+	jp nz, st7565p_clear_page_loop
+	dec b
+	jp nz, st7565p_clear_page
+	ret
+
+; st7565p_set_contrast: Sets the contrast of the ST7565P.
+; Parameters: B = new contrast
+; Trashes: A
+; Returns: none
+st7565p_set_contrast:
+	ld a, 0x81
+	ld [st7565p_command], a
+
+	ld a, b
 	ld [st7565p_command], a
 
 	ret
@@ -43,7 +151,8 @@ st7565p_set_column_address:
 ; Trashes: A
 ; Returns: none
 st7565p_set_page_address:
-	ld a, b
+	ld a, 7
+	sub b
 	or st7565p_command_page_address
 	ld [st7565p_command], a
 

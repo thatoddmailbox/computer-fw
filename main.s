@@ -4,7 +4,7 @@
 .incasm "defs.s"
 
 main:
-	ld sp, 0xFFFF
+	ld sp, ((ram_start+ram_size)-1)
 
 	xor a
 	ld hl, ram_start

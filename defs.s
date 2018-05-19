@@ -66,7 +66,7 @@
 ; SRAM
 ;
 .def ram_size 4*1024
-.def ram_start ((0xFFFF-ram_size)+1)
+.def ram_start 0x3000
 
 ;
 ; variables
