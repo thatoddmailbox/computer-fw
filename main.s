@@ -8,10 +8,11 @@ main:
 
 	xor a
 	ld hl, ram_start
-	ld bc, (tetris_board_last_row-ram_start)
+	ld c, (tetris_board_buffer_row-ram_start)
 main_clear_ram_loop:
 	ld [hl], a
-	dec bc
+	inc hl
+	dec c
 	jp nz, main_clear_ram_loop
 
 	call i8251_init
