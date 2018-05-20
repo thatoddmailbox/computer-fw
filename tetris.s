@@ -53,10 +53,7 @@ tetris_game_loop_skip_down:
 	inc hl
 	ld [tetris_drop_counter], hl
 	ld a, l
-	cp 0x00
-	jp nz, tetris_game_loop_no_drop
-	ld a, h
-	cp 0x08
+	cp 64
 	jp nz, tetris_game_loop_no_drop
 	; reset the counter
 	xor a
