@@ -24,6 +24,7 @@ main_clear_ram_loop:
 
 .incasm "util.s"
 .incasm "tetris.s"
+.incasm "calc.s"
 
 .incasm "i8251.s"
 .incasm "i8255.s"

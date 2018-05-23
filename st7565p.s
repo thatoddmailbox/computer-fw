@@ -90,16 +90,18 @@ st7565p_wait_loop:
 
 ; st7565p_clear: Clears the RAM of the ST7565P.
 ; Parameters: none
-; Trashes: A
+; Trashes: A, B, C
 ; Returns: none
 st7565p_clear:
-	ld b, 7
+	ld b, 8
 st7565p_clear_page:
 	push bc
 	ld b, 0
 	call st7565p_set_column_address
 	pop bc
+	dec b
 	call st7565p_set_page_address
+	inc b
 	ld c, 128
 	xor a
 st7565p_clear_page_loop:
@@ -158,9 +160,70 @@ st7565p_set_page_address:
 
 	ret
 
+; st7565p_start_read_modify_write: Enables the read-modify-write mode of the ST7565P.
+; Parameters: none
+; Trashes: A
+; Returns: none
+st7565p_start_read_modify_write:
+	ld a, 0b11100000
+	ld [st7565p_command], a
+
+	ret
+
+; st7565p_end_read_modify_write: Disables the read-modify-write mode of the ST7565P.
+; Parameters: none
+; Trashes: A
+; Returns: none
+st7565p_end_read_modify_write:
+	ld a, 0b11101110
+	ld [st7565p_command], a
+
+	ret
+
+; st7565p_underline: Underlines the currently selected page of the ST7565P, clearing existing contents.
+; Parameters: none
+; Trashes: A, B
+; Returns: none
+st7565p_underline:
+	ld b, 0
+	call st7565p_set_column_address
+
+	ld a, 0b00000001
+	ld b, 128
+st7565p_underline_loop:
+	ld [st7565p_data], a
+	dec b
+	jp nz, st7565p_underline_loop
+
+	ret
+
+; st7565p_underline_existing: Underlines the currently selected page of the ST7565P, preserving existing contents.
+; Parameters: none
+; Trashes: A, B, C
+; Returns: none
+st7565p_underline_existing:
+	ld b, 0
+	call st7565p_set_column_address
+
+	ld a, [st7565p_data] ; dummy read b/c we just set a column
+
+	call st7565p_start_read_modify_write
+
+	ld b, 128
+st7565p_underline_existing_loop:
+	ld a, [st7565p_data]
+	or 0b00000001
+	ld [st7565p_data], a
+	dec b
+	jp nz, st7565p_underline_existing_loop
+
+	call st7565p_end_read_modify_write
+
+	ret
+
 ; st7565p_write_char: Writes the given character to the current cursor position of the ST7565P.
-; Parameters: A = character to write
-; Trashes: B, C, H, L
+; Parameters: A = character to write, B = 255 to invert, C = 255 to underline
+; Trashes: A, D, H, L
 ; Returns: none
 st7565p_write_char:
 	; set hl to character
@@ -172,15 +235,25 @@ st7565p_write_char:
 	add hl, hl
 	add hl, hl
 
+	push bc
 	ld bc, font
 	add hl, bc ; HL is now pointing at the character data to output
+	pop bc
 
-	ld b, 8
+	ld d, 8
 st7565p_write_char_loop:
 	ld a, [hl]
+	bit 0, c
+	jp z, st7565p_write_char_loop_no_underline
+	or 0b00000001
+st7565p_write_char_loop_no_underline:
+	bit 0, b
+	jp z, st7565p_write_char_loop_no_invert
+	cpl
+st7565p_write_char_loop_no_invert:
 	ld [st7565p_data], a
 	inc hl
-	dec b
+	dec d
 	jp nz, st7565p_write_char_loop
 
 	ret
@@ -235,13 +308,28 @@ st7565p_write_turned_char_bit_not_off:
 	ret
 
 ; st7565p_write_str: Writes the given string to the given position.
-; Parameters: HL = address of string to write, B = x coordinate, C = page to write on
-; Trashes: A, B, C
+; Parameters: HL = address of string to write, A = bit 0 controls invert and bit 7 controls underline, B = x coordinate, C = page to write on
+; Trashes: A, B, C, D
 ; Returns: HL = null byte of string
 st7565p_write_str:
+	push af
 	call st7565p_set_column_address
 	ld b, c
 	call st7565p_set_page_address
+	pop af
+
+	; if b non-zero -> invert, c non-zero -> underline
+	ld b, 0
+	ld c, 0
+	bit 0, a
+	jp z, st7565p_write_str_no_invert
+	ld b, 0xFF
+st7565p_write_str_no_invert:
+	bit 7, a
+	jp z, st7565p_write_str_loop
+	ld c, 0xFF
+
+	; loop over characters
 st7565p_write_str_loop:
 	ld a, [hl]
 	cp 0

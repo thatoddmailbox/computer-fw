@@ -7,16 +7,19 @@ welcome_start:
 	call st7565p_clear
 
 	; draw text
+	xor a
 	ld b, 0
 	ld c, 0
 	ld hl, welcome_title
 	call st7565p_write_str
 
+	xor a
 	ld b, 8
 	ld c, 2
 	inc hl
 	call st7565p_write_str
 
+	xor a
 	ld b, 8
 	ld c, 3
 	inc hl
@@ -91,11 +94,13 @@ welcome_cursor_update_less_than_max:
 	push af
 
 	; clear cursors
+	xor a
 	ld b, 0
 	ld c, 2
 	ld hl, welcome_blank
 	call st7565p_write_str
 
+	xor a
 	ld b, 0
 	ld c, 3
 	ld hl, welcome_blank
@@ -108,6 +113,7 @@ welcome_cursor_update_less_than_max:
 	ld b, 0
 	add a, 2
 	ld c, a
+	xor a
 	ld hl, welcome_cursor
 	call st7565p_write_str
 
@@ -160,11 +166,11 @@ welcome_title:
 	asciz "Select an option"
 
 welcome_option_one:
-	asciz "Option 1"
+	asciz "Calculator"
 
 welcome_option_two:
 	asciz "Tetris"
 
 welcome_jump_table:
-	dw 0
+	dw calc_start
 	dw tetris_start
