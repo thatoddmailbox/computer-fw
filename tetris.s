@@ -5,10 +5,12 @@ tetris_start:
 
 	xor a
 	ld [tetris_lines], a
+	ld [tetris_fall_index], a
 	ld hl, tetris_board
 	ld b, tetris_board_height_blocks
 tetris_clear_board_row:
 	ld [hl], a
+	inc hl
 	dec b
 	jp nz, tetris_clear_board_row
 
