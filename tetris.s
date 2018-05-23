@@ -225,6 +225,19 @@ tetris_draw_board:
 	ld de, st7565p_data ; the screen data
 tetris_draw_board_column_loop:
 	ld hl, tetris_board ; the current row
+	; this code is supposed to set A to 255 if we're in column 0, else A is 0
+	; nothing actually uses the result of A
+	; but somehow, despite this, this block of code fixes a bug where column zero's falling blocks are offset by one
+	; this bug only occurs on real hardware and not in the emulator
+	; my guess is some subtle timing issue, but I REALLY HAVE NO IDEA WHY THIS CODE WORKS
+	ld a, c
+	cp 0
+	jp z, tetris_draw_board_zero_column
+	ld a, 0
+	jp tetris_draw_board_zero_column_checked
+tetris_draw_board_zero_column:
+	ld a, 0xFF
+tetris_draw_board_zero_column_checked:
 	exx
 	; fetch the fall index and subtract it from the fall zone address
 	ld hl, tetris_fall_index
@@ -233,6 +246,7 @@ tetris_draw_board_column_loop:
 	ld c, a
 	ld hl, tetris_fall_zone
 	sbc hl, bc
+tetris_draw_board_no_offset_hack:
 	exx
 	push bc
 	; set the page to the current column
