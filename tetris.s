@@ -28,6 +28,14 @@ tetris_game_loop:
 	ld b, a
 	ld a, [i8255_port_a]
 
+	bit i8255_button_bit_back, a
+	jp z, tetris_game_loop_skip_back
+	bit i8255_button_bit_back, b
+	jp nz, tetris_game_loop_skip_back
+	; back button (exit game)
+	ret
+tetris_game_loop_skip_back:
+
 	bit i8255_button_bit_up, a
 	jp z, tetris_game_loop_skip_up
 	bit i8255_button_bit_up, b

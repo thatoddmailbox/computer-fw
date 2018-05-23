@@ -1,4 +1,11 @@
 welcome_start:
+	; clear redraw flag
+	xor a
+	ld [welcome_need_redraw], a
+
+	; clear the screen
+	call st7565p_clear
+
 	; draw text
 	ld b, 0
 	ld c, 0
@@ -15,12 +22,12 @@ welcome_start:
 	inc hl
 	call st7565p_write_str
 
-	ld b, 8
-	ld c, 4
-	inc hl
-	call st7565p_write_str
-
 welcome_loop:
+	; if redraw flag is not zero, redraw screen
+	ld a, [welcome_need_redraw]
+	or a
+	jp nz, welcome_start
+
 	ld hl, random_counter
 	inc [hl]
 
@@ -75,7 +82,7 @@ welcome_cursor_update:
 	jp nz, welcome_cursor_update_greater_than_min
 	ld a, 2
 welcome_cursor_update_greater_than_min:
-	cp 3
+	cp 2
 	jp nz, welcome_cursor_update_less_than_max
 	ld a, 0
 welcome_cursor_update_less_than_max:
@@ -94,14 +101,9 @@ welcome_cursor_update_less_than_max:
 	ld hl, welcome_blank
 	call st7565p_write_str
 
-	ld b, 0
-	ld c, 4
-	ld hl, welcome_blank
-	call st7565p_write_str
-
 	pop af
 
-	; a now contains the currently selected option, from 0 to 2
+	; a now contains the currently selected option, from 0 to 1
 	; draw the cursor for the currently selected option
 	ld b, 0
 	add a, 2
@@ -140,6 +142,9 @@ welcome_select:
 	jp [hl]
 
 welcome_select_end:
+	ld a, 0xFF
+	ld [welcome_need_redraw], a
+
 	pop hl
 	pop bc
 	pop af
@@ -160,10 +165,6 @@ welcome_option_one:
 welcome_option_two:
 	asciz "Tetris"
 
-welcome_option_three:
-	asciz "Option 3"
-
 welcome_jump_table:
 	dw 0
 	dw tetris_start
-	dw 0

@@ -75,7 +75,9 @@
 .def current_menu_item (last_buttons+1)
 .def random_counter (current_menu_item+1)
 
-.def tetris_lines (random_counter+1)
+.def welcome_need_redraw (random_counter+1)
+
+.def tetris_lines (welcome_need_redraw+1)
 .def tetris_lines_old (tetris_lines+1)
 .def tetris_need_collision_check (tetris_lines_old+1)
 .def tetris_dropping_something (tetris_need_collision_check+1)
