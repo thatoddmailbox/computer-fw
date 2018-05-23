@@ -25,6 +25,15 @@ welcome_start:
 	inc hl
 	call st7565p_write_str
 
+	; draw the cursor for the currently selected option
+	ld b, 0
+	ld a, [current_menu_item]
+	add a, 2
+	ld c, a
+	xor a
+	ld hl, welcome_cursor
+	call st7565p_write_str
+
 welcome_loop:
 	; if redraw flag is not zero, redraw screen
 	ld a, [welcome_need_redraw]
