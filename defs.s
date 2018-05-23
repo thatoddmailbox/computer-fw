@@ -77,7 +77,11 @@
 
 .def welcome_need_redraw (random_counter+1)
 
-.def tetris_lines (welcome_need_redraw+1)
+.def calc_buffer (welcome_need_redraw+1) ; size: 2 bytes
+.def calc_flip_buffer (calc_buffer+2) ; size: 2 bytes
+.def calc_selected_button (calc_flip_buffer+1)
+
+.def tetris_lines (calc_selected_button+1)
 .def tetris_lines_old (tetris_lines+1)
 .def tetris_need_collision_check (tetris_lines_old+1)
 .def tetris_dropping_something (tetris_need_collision_check+1)
